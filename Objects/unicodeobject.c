@@ -12954,31 +12954,16 @@ unicode_repeat(PyObject *str, Py_ssize_t len)
         return NULL;
     assert(PyUnicode_KIND(u) == PyUnicode_KIND(str));
 
-    if (PyUnicode_GET_LENGTH(str) == 1) {
-        int kind = PyUnicode_KIND(str);
-        Py_UCS4 fill_char = PyUnicode_READ(kind, PyUnicode_DATA(str), 0);
-        if (kind == PyUnicode_1BYTE_KIND) {
-            void *to = PyUnicode_DATA(u);
-            memset(to, (unsigned char)fill_char, len);
-        }
-        else if (kind == PyUnicode_2BYTE_KIND) {
-            Py_UCS2 *ucs2 = PyUnicode_2BYTE_DATA(u);
-            for (n = 0; n < len; ++n)
-                ucs2[n] = fill_char;
-        } else {
-            Py_UCS4 *ucs4 = PyUnicode_4BYTE_DATA(u);
-            assert(kind == PyUnicode_4BYTE_KIND);
-            for (n = 0; n < len; ++n)
-                ucs4[n] = fill_char;
-        }
-    }
-    else {
+    Py_ssize_t char_size = PyUnicode_KIND(str);
+    char *to = (char *) PyUnicode_DATA(u);
+    if (PyUnicode_GET_LENGTH(str) == 1 && char_size == PyUnicode_1BYTE_KIND) {
+        Py_UCS4 fill_char = PyUnicode_READ(char_size, PyUnicode_DATA(str), 0);
+        memset(to, fill_char, len);
+    } else {
         /* number of characters copied this far */
         Py_ssize_t done = PyUnicode_GET_LENGTH(str);
-        Py_ssize_t char_size = PyUnicode_KIND(str);
-        char *to = (char *) PyUnicode_DATA(u);
         memcpy(to, PyUnicode_DATA(str),
-                  PyUnicode_GET_LENGTH(str) * char_size);
+            PyUnicode_GET_LENGTH(str) * char_size);
         while (done < nchars) {
             n = (done <= nchars-done) ? done : nchars-done;
             memcpy(to + (done * char_size), to, n * char_size);
